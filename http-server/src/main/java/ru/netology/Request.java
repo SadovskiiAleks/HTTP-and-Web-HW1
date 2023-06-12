@@ -17,6 +17,7 @@ public class Request {
     int limit;
 
     List<String> listOfHeaders = new ArrayList<>();
+    List<String> listOfBody = new ArrayList<>();
     List<NameValuePair> pairs = new ArrayList<>();
 
     byte[] body;
@@ -94,8 +95,19 @@ public class Request {
                 System.out.println(new String(body));
             }
         }
+
+        if (listOfHeaders.stream().filter(x -> x.startsWith("Content-Type")).findFirst().isPresent() &&
+                listOfHeaders.stream().filter(x -> x.startsWith("Content-Type")).findFirst()
+                        .get().contains("application/x-www-form-urlencoded") ){
+            pairsBody();
+            System.out.println(getPostParams());
+        }
+
         return this;
     }
+
+
+
 
     private static Optional<String> extractHeader(List<String> headers, String header) {
         return headers.stream()
@@ -130,7 +142,7 @@ public class Request {
         return this.pairs;
     }
 
-    void parseURL() {
+    private void parseURL() {
         URLEncodedUtils encodedURL = new URLEncodedUtils();
         String clearQueryParam = null;
 
@@ -149,6 +161,21 @@ public class Request {
         }
     }
 
+    private void pairsBody() {
+        listOfBody = Arrays.asList(new String(body).split("&"));
+    }
 
+    public List<String> getPostParam(String name){
+        if (listOfBody.stream().filter(x -> x.startsWith(name)).findFirst().isPresent()) {
+            List<String> filterBodyParams = this.listOfBody.stream()
+                    .filter(x -> x.startsWith(name)).collect(Collectors.toList());
+            return filterBodyParams;
+        }
+        return null;
+    }
+
+    public List<String> getPostParams(){
+        return listOfBody;
+    }
 
 }

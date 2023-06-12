@@ -75,6 +75,25 @@ public class Main {
                 e.printStackTrace();
             }
         });
+        server.addHandler("POST", "/messages", (x, y) -> {
+            try {
+
+                final var mimeType = "text";
+
+                y.write((
+                        "HTTP/1.1 200 OK\r\n" +
+                                "Content-Type: " + mimeType + "\r\n" +
+                                "Content-Length: " + 0 + "\r\n" +
+                                "Connection: close\r\n" +
+                                "\r\n"
+                ).getBytes());
+                y.flush();
+                y.close();
+            } catch (
+                    IOException e) {
+                e.printStackTrace();
+            }
+        });
 
         server.addHandler("GET", "/links.html", (x, y) -> {
             try {
