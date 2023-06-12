@@ -1,7 +1,12 @@
 package ru.netology;
 
+import org.apache.http.NameValuePair;
+import org.apache.http.client.utils.URLEncodedUtils;
+
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class Request {
     Boolean badRequest = false;
@@ -12,7 +17,7 @@ public class Request {
     int limit;
 
     List<String> listOfHeaders = new ArrayList<>();
-    Map<String, String> mapOfHeaders = new HashMap<>();
+    List<NameValuePair> pairs = new ArrayList<>();
 
     byte[] body;
 
@@ -53,6 +58,9 @@ public class Request {
             badRequest = true;
         }
         System.out.println(handlerName);
+        parseURL();
+        System.out.println(getQueryParam("value"));
+
         httpVersion = requestLine[2];
 
 
@@ -109,5 +117,38 @@ public class Request {
         }
         return -1;
     }
+
+    public List<NameValuePair> getQueryParam(String name) {
+        if (pairs.stream().filter(x -> x.getName().equals(name)).findFirst().isPresent()) {
+            List<NameValuePair> filterPairs = this.pairs.stream().filter(x -> x.getName().equals(name)).collect(Collectors.toList());
+            return filterPairs;
+        }
+        return null;
+    }
+
+    List<NameValuePair> getQueryParams() {
+        return this.pairs;
+    }
+
+    void parseURL() {
+        URLEncodedUtils encodedURL = new URLEncodedUtils();
+        String clearQueryParam = null;
+
+        int index = handlerName.indexOf('?');
+
+        if (index > 0) {
+            clearQueryParam = handlerName.substring(index + 1, handlerName.length());
+        }
+
+        this.pairs = encodedURL.parse(clearQueryParam, StandardCharsets.UTF_8);
+        System.out.println(pairs.toString());
+        for (NameValuePair n :
+                pairs) {
+            System.out.println("name: " + n.getName() + "___ value:" + n.getValue());
+
+        }
+    }
+
+
 
 }

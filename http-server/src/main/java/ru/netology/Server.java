@@ -32,6 +32,7 @@ public class Server {
                     if (request.badRequest) {
                         new HttpRequestException(new BufferedOutputStream(socket.getOutputStream()));
                         socket.shutdownOutput();
+                        socket.shutdownInput();
                         continue;
                     }
 
@@ -75,12 +76,22 @@ public class Server {
     }
 
     public Handler getHandler(String method, String handlerName) {
+        int index = handlerName.indexOf('?');
         if (method.equals("GET")) {
-            return getMap.get(handlerName);
+            if (index > 0) {
+                String clearHandlerName = handlerName.substring(0,index);
+                return getMap.get(clearHandlerName);
+            } else {
+                return getMap.get(handlerName);
+            }
 
         } else if (method.equals("POST")) {
-            return postMap.get(handlerName);
-
+            if (index > 0) {
+                String clearHandlerName = handlerName.substring(0,index);
+                return postMap.get(clearHandlerName);
+            } else {
+                return postMap.get(handlerName);
+            }
         } else {
             //return new exception
             return null;
