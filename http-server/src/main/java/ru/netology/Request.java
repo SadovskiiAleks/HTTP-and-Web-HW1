@@ -1,58 +1,113 @@
 package ru.netology;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.HashMap;
-import java.util.Map;
+import java.io.*;
+import java.util.*;
 
 public class Request {
-    //debag
-    String exeptionTEST;
-
+    Boolean badRequest = false;
 
     String methodOfHandler;
     String handlerName;
     String httpVersion;
+    int limit;
 
+    List<String> listOfHeaders = new ArrayList<>();
     Map<String, String> mapOfHeaders = new HashMap<>();
 
     byte[] body;
 
+    public Request(int limit) {
+        this.limit = limit;
+    }
+
 
     Request addRequest(InputStream inputStream) throws IOException {
-        final var in = new BufferedReader(new InputStreamReader(inputStream));
 
 
-        final var requestLine = in.readLine();
-        final var parts = requestLine.split(" ");
+        final var in = new BufferedInputStream(inputStream);
+
+        in.mark(limit);
+        final var buffer = new byte[limit];
+        final var read = in.read(buffer);
+
+
+        final var requestLineDelimiter = new byte[]{'\r', '\n'};
+        final var requestLineEnd = indexOf(buffer, requestLineDelimiter, 0, read);
+        if (requestLineEnd == -1) {
+            badRequest = true;
+        }
 
         // read only request line for simplicity
         // must be in form GET /path HTTP/1.1
 
-        //checkFeastLine, need check on new exception 404*
-        methodOfHandler = parts[0];
-        handlerName = parts[1];
-        httpVersion = parts[2];
+
+        final var requestLine = new String(Arrays.copyOf(buffer, requestLineEnd)).split(" ");
+        if (requestLine.length != 3) {
+            badRequest = true;
+        }
+        methodOfHandler = requestLine[0];
+        System.out.println(methodOfHandler);
+
+        handlerName = requestLine[1];
+        if (!handlerName.startsWith("/")) {
+            badRequest = true;
+        }
+        System.out.println(handlerName);
+        httpVersion = requestLine[2];
+
 
         //read all headers
-        String readLine;
-        do {
-            readLine = in.readLine();
-            String[] headersParts = readLine.split(": ");
-            mapOfHeaders.put(headersParts[0], headersParts[1]);
+        final var headersDelimiter = new byte[]{'\r', '\n', '\r', '\n'};
+        final var headersStart = requestLineEnd + requestLineDelimiter.length;
+        final var headersEnd = indexOf(buffer, headersDelimiter, headersStart, read);
+        if (headersEnd == -1) {
+            badRequest = true;
+
         }
-        while (readLine.equals("\r\n\r\n"));
+
+        in.reset();
+        in.skip(headersStart);
+
+        final var headersBytes = in.readNBytes(headersEnd - headersStart);
+        listOfHeaders = Arrays.asList(new String(headersBytes).split("\r\n"));
+        System.out.println(listOfHeaders);
 
         //"тело запроса, если есть."
-        if (mapOfHeaders.get("Content-Length") != null) {
-            byte[] body = new byte[Integer.parseInt(mapOfHeaders.get("Content-Length"))];
-            body = inputStream.readAllBytes();
+        Boolean isHaveBody = listOfHeaders.stream().filter(x -> x.startsWith("Content-Length")).findFirst().isPresent();
+        System.out.println("Request have body: " + isHaveBody);
+
+        if (isHaveBody != null) {
+            in.skip(headersDelimiter.length);
+            // вычитываем Content-Length, чтобы прочитать body
+            final var contentLength = extractHeader(listOfHeaders, "Content-Length");
+            if (contentLength.isPresent()) {
+                final var length = Integer.parseInt(contentLength.get());
+                body = in.readNBytes(length);
+                System.out.println(new String(body));
+            }
         }
-
-        //in.close();
-
         return this;
     }
+
+    private static Optional<String> extractHeader(List<String> headers, String header) {
+        return headers.stream()
+                .filter(o -> o.startsWith(header))
+                .map(o -> o.substring(o.indexOf(" ")))
+                .map(String::trim)
+                .findFirst();
+    }
+
+    private static int indexOf(byte[] array, byte[] target, int start, int max) {
+        outer:
+        for (int i = start; i < max - target.length + 1; i++) {
+            for (int j = 0; j < target.length; j++) {
+                if (array[i + j] != target[j]) {
+                    continue outer;
+                }
+            }
+            return i;
+        }
+        return -1;
+    }
+
 }

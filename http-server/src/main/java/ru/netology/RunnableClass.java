@@ -19,12 +19,9 @@ public class RunnableClass implements Runnable {
     public void run() {
         try {
             handler.handle(request, new BufferedOutputStream(socket.getOutputStream()));
-
             //inputStream.close();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-
-
     }
 }

@@ -1,5 +1,6 @@
 package ru.netology;
 
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.ServerSocket;
@@ -18,54 +19,66 @@ public class Server {
     }
 
     void start() {
+        ExecutorService threadPool = Executors.newFixedThreadPool(64);
+
         try (final var serverSocket = new ServerSocket(numberOfSocket)) {
-            final ExecutorService threadPool = Executors.newFixedThreadPool(64);
+
             while (true) {
                 try {
                     //Accept a new connection
                     final var socket = serverSocket.accept();
                     InputStream inputStream = socket.getInputStream();
-                    Request request = new Request().addRequest(inputStream);
+                    Request request = new Request(4096).addRequest(inputStream);
+                    if (request.badRequest) {
+                        new HttpRequestException(new BufferedOutputStream(socket.getOutputStream()));
+                        socket.shutdownOutput();
+                        continue;
+                    }
 
+                    socket.shutdownInput();
                     Handler handler = this.getHandler(request.methodOfHandler, request.handlerName);
+                    if (handler == null) {
+                        new HttpRequestException(new BufferedOutputStream(socket.getOutputStream()));
+                        socket.shutdownOutput();
+                        continue;
+                    }
+
                     RunnableClass runnableClass = new RunnableClass(handler, request, socket);
 
                     //Create and start new Thread on ThreadPool
                     threadPool.execute(runnableClass);
-
-                    //inputStream.close();
 
 
                 } catch (
                         IOException e) {
                     e.printStackTrace();
                 }
-                //I need shutdown threadPool ?
-                // threadPool.shutdown();
+
             }
+
         } catch (
                 IOException e) {
             e.printStackTrace();
         }
+        threadPool.shutdown();
     }
 
-    public void addHandler(String method, String wayOfURL, Handler handler) {
+    public void addHandler(String method, String wayOfURL, Handler handler) throws HttpMethodException {
         if (method.equals("GET")) {
             getMap.put(wayOfURL, handler);
-        }
-        if (method.equals("POST")) {
+        } else if (method.equals("POST")) {
             postMap.put(wayOfURL, handler);
         } else {
-            //return new exception
+            new HttpMethodException(method);
         }
+
     }
 
     public Handler getHandler(String method, String handlerName) {
         if (method.equals("GET")) {
             return getMap.get(handlerName);
 
-        }
-        if (method.equals("POST")) {
+        } else if (method.equals("POST")) {
             return postMap.get(handlerName);
 
         } else {
