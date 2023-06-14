@@ -13,14 +13,13 @@ public class Server {
     int numberOfSocket;
     Map<String, Handler> getMap = new HashMap<>();
     Map<String, Handler> postMap = new HashMap<>();
+    final ExecutorService threadPool = Executors.newFixedThreadPool(64);
 
     Server(int numberOfSocket) {
         this.numberOfSocket = numberOfSocket;
     }
 
     void start() {
-        ExecutorService threadPool = Executors.newFixedThreadPool(64);
-
         try (final var serverSocket = new ServerSocket(numberOfSocket)) {
 
             while (true) {
