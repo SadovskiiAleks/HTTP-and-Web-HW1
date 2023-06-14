@@ -1,12 +1,18 @@
 package ru.netology;
 
+import org.apache.commons.fileupload.FileItem;
+import org.apache.commons.fileupload.disk.DiskFileItemFactory;
+import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.http.NameValuePair;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.utils.URLEncodedUtils;
+import org.apache.http.protocol.RequestContent;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Request {
     Boolean badRequest = false;
@@ -103,9 +109,16 @@ public class Request {
             System.out.println(getPostParams());
         }
 
+        if (listOfHeaders.stream().filter(x -> x.startsWith("Content-Type")).findFirst().isPresent() &&
+                listOfHeaders.stream().filter(x -> x.startsWith("Content-Type")).findFirst()
+                        .get().contains("multipart/form-data") ){
+            pairsMultipartBody();
+            System.out.println(getPostParams());
+        }
+
+
         return this;
     }
-
 
 
 
@@ -178,4 +191,34 @@ public class Request {
         return listOfBody;
     }
 
+
+    private void pairsMultipartBody() {
+        try {
+//            DiskFileItemFactory factory = new DiskFileItemFactory();
+//            factory.setRepository(new File("A:\\HomeWorkNetology\\HTTP and the Modern Web" +
+//                    "\\jspr-code-master\\jspr-code-master" +
+//                    "\\01_web\\http-server\\static"));
+//            ServletFileUpload fileUpload = new ServletFileUpload(factory);
+//            HttpServletRequest req = new HttpServletRequest();
+//            List<FileItem> fileItems = fileUpload.parseRequest(n);
+//            for(FileItem fileItem : fileItems) {
+//                if(!fileItem.isFormField()) {
+//                    File file = new File(fileItem.getName());
+//                    File fNew= new File("C:\\upload\\"  + file.getName());
+//                    fileItem.write(fNew);
+//                }
+//            }
+        } catch (Exception e) {
+            String fileUploadError = "Problem with Apache Commons File Upload.";
+            System.out.println(fileUploadError);
+        }
+    }
+
+    void getPart(String name) {
+
+    }
+
+    void getParts() {
+
+    }
 }
