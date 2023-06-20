@@ -11,8 +11,9 @@
   <form action="http://localhost:9999/messages" method="post" enctype="multipart/form-data">
       <input> <!-- without name - никуда не отправится -->
       <input name="title">
-      <input name="value">
       <input name="value"> <!-- специально два поля с одним name -->
+      <input type="file" name="image"> <!-- для отправки файлов -->
+      <input name="value">
       <input type="file" name="image"> <!-- для отправки файлов -->
     <button>Send</button>
   </form>
